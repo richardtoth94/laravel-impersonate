@@ -19,8 +19,8 @@ class ImpersonateController extends Controller
     {
         $this->manager = app()->make(ImpersonateManager::class);
         
-        $guard = $this->manager->getDefaultSessionGuard();
-        $this->middleware('auth:' . $guard)->only('take');
+        // $guard = $this->manager->getDefaultSessionGuard();
+        // $this->middleware('auth:' . $guard)->only('take');
     }
 
     /**
@@ -34,7 +34,7 @@ class ImpersonateController extends Controller
         $guardName = $guardName ?? $this->manager->getDefaultSessionGuard();
 
         // Cannot impersonate yourself
-        if ($id == $request->user()->getAuthIdentifier() && ($this->manager->getCurrentAuthGuardName() == $guardName)) {
+        if ($id == $request->user($guardName)->getAuthIdentifier() && ($this->manager->getCurrentAuthGuardName() == $guardName)) {
             abort(403);
         }
 
@@ -43,14 +43,14 @@ class ImpersonateController extends Controller
             abort(403);
         }
 
-        if (!$request->user()->canImpersonate()) {
+        if (!$request->user($guardName)->canImpersonate()) {
             abort(403);
         }
 
         $userToImpersonate = $this->manager->findUserById($id, $guardName);
 
         if ($userToImpersonate->canBeImpersonated()) {
-            if ($this->manager->take($request->user(), $userToImpersonate, $guardName)) {
+            if ($this->manager->take($request->user($guardName), $userToImpersonate, $guardName)) {
                 $takeRedirect = $this->manager->getTakeRedirectTo();
                 if ($takeRedirect !== 'back') {
                     return redirect()->to($takeRedirect);
